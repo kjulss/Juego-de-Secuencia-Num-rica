@@ -1,0 +1,118 @@
+import pygame
+import random
+import time
+
+# Inicializar pygame
+pygame.init()
+
+# Configuración de la pantalla
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Juego de Secuencia Numérica")
+
+# Colores cálidos
+WHITE = (255, 245, 238)
+ORANGE = (255, 165, 0)
+RED = (255, 69, 0)
+BROWN = (139, 69, 19)
+YELLOW = (255, 223, 0)
+
+# Fuentes
+font = pygame.font.Font(None, 50)
+small_font = pygame.font.Font(None, 36)
+
+# Variables de juego
+score = 0
+mistakes = 0
+max_mistakes = 5
+running = True
+user_input = ""
+
+# Generar secuencias
+
+def generate_sequence():
+    pattern_type = random.choice(["double", "fibonacci", "power"])
+    start = random.randint(1, 5)
+    
+    if pattern_type == "double":
+        sequence = [start * (2 ** i) for i in range(4)]
+    elif pattern_type == "fibonacci":
+        sequence = [start, start + 1]
+        for _ in range(2):
+            sequence.append(sequence[-1] + sequence[-2])
+    elif pattern_type == "power":
+        base = random.randint(2, 4)
+        sequence = [base ** i for i in range(4)]
+    
+    return sequence[:-1], sequence[-1]
+
+# Función para reiniciar el juego
+def reset_game():
+    global score, mistakes, user_input, sequence, correct_answer
+    score = 0
+    mistakes = 0
+    user_input = ""
+    sequence, correct_answer = generate_sequence()
+
+# Generar la primera secuencia
+sequence, correct_answer = generate_sequence()
+
+while running:
+    screen.fill(WHITE)
+    
+    # Dibujar secuencia
+    sequence_text = font.render(", ".join(map(str, sequence)) + ", ?", True, ORANGE)
+    screen.blit(sequence_text, (WIDTH // 2 - sequence_text.get_width() // 2, HEIGHT // 3))
+    
+    # Dibujar entrada del usuario
+    input_text = font.render(user_input, True, RED)
+    screen.blit(input_text, (WIDTH // 2 - input_text.get_width() // 2, HEIGHT // 2))
+    
+    # Dibujar puntuación y errores
+    score_text = small_font.render(f"Puntuación: {score}", True, BROWN)
+    screen.blit(score_text, (10, 10))
+    mistakes_text = small_font.render(f"Errores: {mistakes}/{max_mistakes}", True, RED)
+    screen.blit(mistakes_text, (WIDTH - 250, 10))
+    
+    if mistakes >= max_mistakes:
+        game_over_text = small_font.render("Te has equivocado más de 5 veces, vuelve a intentarlo", True, RED)
+        screen.blit(game_over_text, (WIDTH // 2 - game_over_text.get_width() // 2, HEIGHT // 1.5))
+        restart_button = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 1.2, 200, 50)
+        pygame.draw.rect(screen, BROWN, restart_button)
+        restart_text = small_font.render("Reiniciar", True, WHITE)
+        screen.blit(restart_text, (WIDTH // 2 - restart_text.get_width() // 2, HEIGHT // 1.2 + 10))
+        pygame.display.flip()
+        waiting = True
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    waiting = False
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if restart_button.collidepoint(event.pos):
+                        reset_game()
+                        waiting = False
+        continue
+    
+    pygame.display.flip()
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                try:
+                    if int(user_input) == correct_answer:
+                        score += 1
+                        sequence, correct_answer = generate_sequence()
+                    else:
+                        mistakes += 1
+                    user_input = ""
+                except ValueError:
+                    user_input = ""
+            elif event.key == pygame.K_BACKSPACE:
+                user_input = user_input[:-1]
+            else:
+                user_input += event.unicode
+
+pygame.quit()
